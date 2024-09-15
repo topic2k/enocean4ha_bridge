@@ -1,0 +1,39 @@
+[build-system]
+requires = [ "setuptools>=74.0", "build>=1.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enocean4ha_bridge"
+dynamic = [ "version", "readme"]
+authors = [
+    { name="Torsten Pieper", email="topic2k@atlogger.de" },
+]
+maintainers = [
+    { name="Torsten Pieper", email="topic2k@atlogger.de" },
+]
+description = "EnOcean to HomeAssistant bridge"
+keywords = [ "EnOcean", "HomeAssistant", ]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Home Automation",
+]
+dependencies = [ 'enocean4ha>=0.70', ]
+
+[project.urls]
+Homepage = "https://github.com/topic2k/enocean4ha_bridge"
+Issues = "https://github.com/topic2k/enocean4ha_bridge/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "enocean4ha_bridge.__version__" }
+readme = { file = [ "README.md", ], content-type = "text/markdown" }
+
+#[tool.setuptools.packages.find]
+#where = [ "." ]
+#include = [ "enocean*" ]
+
+#[tool.setuptools.package-data]
+#"*" = [ "*.xml", ]

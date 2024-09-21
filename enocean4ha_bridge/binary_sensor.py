@@ -1,14 +1,21 @@
 import logging
 
-LOGGER = logging.getLogger('enocean.ha.switch')
+from enocean.utils import to_hex_string
+
+from .common import EEPInfo
+
+LOGGER = logging.getLogger('enocean.ha.binary_sensor')
+
 
 class EO4HABinarySensor:
-    def __init__(self, controller, dev_id: list[int]):
-        self.controller = controller
+    def __init__(self, gateway, dev_id: list[int], eep: list[int], loglevel=logging.NOTSET):
+        LOGGER.setLevel(loglevel)
+        self.gateway = gateway
         self.dev_id = dev_id
+        self.eep = EEPInfo(*eep)
+        LOGGER.debug(f"EO4HALight, {repr(self.eep)}, Device-ID: {to_hex_string(self.dev_id)}")
 
-    @staticmethod
-    def parse_packet(packet, actual_which, actual_onoff):
+    def parse_packet(self, packet, actual_which, actual_onoff):
         """ This method is called when there is an incoming packet
             associated with this platform.
 
@@ -18,6 +25,7 @@ class EO4HABinarySensor:
                 - button released
                     ['0xf6', '0x00', '0x00', '0x2d', '0xcf', '0x45', '0x20']
         """
+        LOGGER.debug(repr(self.eep))
         if packet.data[6] == 0x30:
             pushed = 1
         elif packet.data[6] == 0x20:

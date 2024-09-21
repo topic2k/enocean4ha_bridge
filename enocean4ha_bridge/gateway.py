@@ -9,25 +9,23 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect, dispatche
 
 from .constants import SIGNAL_SEND_MESSAGE, SIGNAL_RECEIVE_MESSAGE
 
-LOGGER = logging.getLogger('enocean.ha.controller')
+LOGGER = logging.getLogger('enocean.ha.gateway')
 
-class EnOceanDongle:
+
+class EnOceanGateway:
     """Representation of an EnOcean dongle.
 
-    The dongle is responsible for receiving the ENOcean frames,
+    The dongle is responsible for receiving the EnOcean frames,
     creating devices if needed, and dispatching messages to platforms.
     """
 
-    def __init__(self, hass, serial_path, log_level=logging.NOTSET):
+    def __init__(self, hass, serial_path, loglevel=logging.NOTSET):
         """Initialize the EnOcean dongle."""
-
-        self._communicator = SerialCommunicator(
-            port=serial_path, callback=self.callback
-        )
-        LOGGER.setLevel(log_level)
-        self._communicator.logger.setLevel(log_level)
-        self.serial_path = serial_path
-        self.identifier = basename(normpath(serial_path))
+        LOGGER.setLevel(loglevel)
+        self._communicator = SerialCommunicator(port=serial_path, callback=self.callback, loglevel=loglevel)
+        LOGGER.setLevel(loglevel)
+        # self.serial_path = serial_path
+        # self.identifier = basename(normpath(serial_path))
         self.hass = hass
         self.dispatcher_disconnect_handle = None
 
@@ -75,20 +73,18 @@ class EnOceanDongle:
             ):
                 # Base ID is set from the response data.
                 self._communicator.base_id = packet.response_data
-                LOGGER.info(f"controller id: {to_hex_string(self._communicator.base_id)}")
-
-    # def send_packet(self, packet):
-    #     dispatcher_send(self.hass, SIGNAL_SEND_MESSAGE, packet)
+                LOGGER.info(f"gateway id: {to_hex_string(self._communicator.base_id)}")
 
     def send_command(self, packet_type, rorg, rorg_func, rorg_type, command, **kwargs):
         """Send a command via the EnOcean dongle."""
+        sender = kwargs.pop('sender', None) or self._communicator.base_id
         packet = Packet.create(
             packet_type=packet_type,
             rorg=rorg,
             rorg_func=rorg_func,
             rorg_type=rorg_type,
             command=command,
-            sender=self._communicator.base_id,
+            sender=sender,
             **kwargs
         )
         dispatcher_send(self.hass, SIGNAL_SEND_MESSAGE, packet)

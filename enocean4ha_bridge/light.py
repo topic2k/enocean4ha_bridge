@@ -23,6 +23,9 @@ class EO4HALight:
     def turn_on(self, actual_brightness, **kwargs: Any) -> None:
         brightness = kwargs.get(ATTR_BRIGHTNESS, actual_brightness)
 
+        if brightness is None:
+            brightness = 255
+
         # TODO: need this to be dependent on the eep?
         bval = math.floor(brightness / 256.0 * 100.0)
         if bval == 0:

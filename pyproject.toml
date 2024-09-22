@@ -3,7 +3,7 @@ requires = [ "setuptools>=74.0", "build>=1.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "enocean4habridge"
+name = "enocean4ha_bridge"
 dynamic = [ "version", "readme"]
 authors = [
     { name="Torsten Pieper", email="topic2k@atlogger.de" },
@@ -28,5 +28,5 @@ Homepage = "https://github.com/topic2k/enocean4ha_bridge"
 Issues = "https://github.com/topic2k/enocean4ha_bridge/issues"
 
 [tool.setuptools.dynamic]
-version = { attr = "enocean4habridge.__version__" }
+version = { attr = "enocean4ha_bridge.__version__" }
 readme = { file = [ "README.md", ], content-type = "text/markdown" }

@@ -3,7 +3,7 @@ requires = [ "setuptools>=74.0", "build>=1.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "enocean4habridge"
+name = "enocean4ha_bridge"
 dynamic = [ "version", "readme"]
 authors = [
     { name="Torsten Pieper", email="topic2k@atlogger.de" },

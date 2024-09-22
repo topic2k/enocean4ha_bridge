@@ -28,5 +28,5 @@ Homepage = "https://github.com/topic2k/enocean4ha_bridge"
 Issues = "https://github.com/topic2k/enocean4ha_bridge/issues"
 
 [tool.setuptools.dynamic]
-version = { attr = "enocean4habridge.__version__" }
+version = { attr = "enocean4ha_bridge.__version__" }
 readme = { file = [ "README.md", ], content-type = "text/markdown" }

@@ -10,10 +10,10 @@ from enocean.utils import to_hex_string
 from . import EnOceanGateway
 from .common import EEPInfo
 
-LOGGER = logging.getLogger('enocean.ha.switch')
+LOGGER = logging.getLogger('enocean.ha.valve')
 
 
-class EO4HASwitch:
+class EO4HAValve:
     gateway: EnOceanGateway
     channel: int|None
     eep: EEPInfo
@@ -51,12 +51,10 @@ class EO4HASwitch:
             )
 
     def parse_packet(self, packet: RadioPacket):
-        LOGGER.debug(f"switch, {repr(self.eep)}, Device-ID: {to_hex_string(self.dev_id)}")
-        match packet.rorg:
+        LOGGER.debug(f"valve, {repr(self.eep)}, Device-ID: {to_hex_string(self.dev_id)}")
+        match self.eep.rorg:
             case RORG.BS4:
                 return self._parse_a5_packet(packet)
-            case RORG.VLD:
-                return self._parse_d2_packet(packet)
 
     def _parse_a5_packet(self, packet):
         func = self.eep.func
@@ -68,38 +66,11 @@ class EO4HASwitch:
             }
         }
 
-        if func == 0x12 and func_type == 0x01:
-            packet.parse_eep(rorg_func=self.eep.func, rorg_type=self.eep.func_type)
-            if packet.parsed["DT"]["raw_value"] == 1:  # ==> means meter reading is current value
-                watts = packet.parsed["MR"]["raw_value"] / (10 ** packet.parsed["DIV"]["raw_value"])
-                result["status"] = bool(watts > 1)
-                result["extra_state_attr"].update({'current_value': watts})
+        if func == 0x20 and func_type == 0x06:
+            packet.parse_eep(rorg_func=self.eep.func, rorg_type=self.eep.func_type, direction=1)
+            result["status"] = packet.parsed["CV"]["raw_value"]
+            result["extra_state_attr"].update({
+                "CV": packet.parsed["CV"]["raw_value"],
+            })
 
-        return result
-
-    def _parse_d2_packet(self, packet):
-        func = self.eep.func
-        func_type = self.eep.func_type
-        result = {
-            "extra_state_attr": {
-                "dBm": packet.dBm,
-                "repeater_count": packet.repeater_count
-            }
-        }
-
-        if func == 0x01:
-            packet.parse_eep(rorg_func=self.eep.func, rorg_type=self.eep.func_type, command=packet.data[1])
-            if packet.parsed["CMD"]["raw_value"] == 4:
-                channel = packet.parsed["IO"]["raw_value"]
-                output = packet.parsed["OV"]["raw_value"]
-                if channel == self.channel:
-                    result["status"] = bool(output > 0)
-                    result["extra_state_attr"].update({
-                        "error_level": packet.parsed["EL"]["value"],
-                        "over_current": packet.parsed["OC"]["value"],
-                        "power_failure": packet.parsed["PF"]["value"],
-                        "power_failure_detection": packet.parsed["PFD"]["value"],
-                    })
-            elif packet.parsed["CMD"]["raw_value"] == 7:
-                LOGGER.debug(packet.parsed)
         return result

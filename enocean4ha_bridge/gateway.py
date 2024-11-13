@@ -5,6 +5,10 @@ import logging
 import os.path
 from glob import glob
 
+from homeassistant.components.enocean.const import CONF_EEP, CONF_MANUFACTURER
+from homeassistant.const import CONF_ID
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import discovery_flow
 from enocean.communicators import SerialCommunicator
 from enocean.protocol.packet import RadioPacket, Packet
 from enocean.utils import to_hex_string
@@ -12,8 +16,10 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect, dispatche
 from serial import SerialException
 from serial.tools.list_ports import comports
 from serial.tools.list_ports_linux import SysFS
+from homeassistant import config_entries
+from enocean.protocol.constants import MANUFACTURES
 
-from .constants import SIGNAL_SEND_MESSAGE, SIGNAL_RECEIVE_MESSAGE
+from .constants import DOMAIN, SIGNAL_SEND_MESSAGE, SIGNAL_RECEIVE_MESSAGE
 
 LOGGER = logging.getLogger('enocean.ha.gateway')
 
@@ -25,11 +31,16 @@ class EnOceanGateway:
     creating devices if needed, and dispatching messages to platforms.
     """
 
-    def __init__(self, hass, serial_path: str , loglevel=logging.NOTSET):
+    def __init__(self, hass: HomeAssistant, serial_path: str , teach_in_callback=None,  loglevel=logging.NOTSET):
         """Initialize the EnOcean dongle."""
-        self._communicator = SerialCommunicator(port=serial_path, callback=self.callback, loglevel=loglevel)
+        self._communicator = SerialCommunicator(
+            port=serial_path,
+            callback=self.callback,
+            teach_in_callback=teach_in_callback or self.teach_in_callback,
+            loglevel=loglevel
+        )
         LOGGER.setLevel(loglevel)
-        self.hass = hass
+        self.hass: HomeAssistant = hass
         self.dispatcher_disconnect_handle = None
 
         executor = concurrent.futures.ThreadPoolExecutor(1)
@@ -129,6 +140,30 @@ class EnOceanGateway:
 
         if isinstance(packet, RadioPacket):
             dispatcher_send(self.hass, SIGNAL_RECEIVE_MESSAGE, packet)
+
+    def teach_in_callback(self, packet):
+        response_packet = packet.create_response_packet(self._communicator.base_id)
+        LOGGER.info('Sending response to UTE teach-in.')
+        self._communicator.send(response_packet)
+        LOGGER.info(
+            f"teaching in: {packet.sender_hex}, "
+            f"EEP {packet.rorg_of_eep:02X}-{packet.rorg_func:02X}-{packet.rorg_type:02X}, "
+            f"Manufacturer: {MANUFACTURES[packet.rorg_manufacturer] if 
+            packet.rorg_manufacturer in MANUFACTURES else 'Unknown'} (0x{packet.rorg_manufacturer:02X})"
+        )
+        async def trigger_discovery_flow():
+            discovery_flow.async_create_flow(
+                self.hass,
+                DOMAIN,
+                context={"source": config_entries.SOURCE_INTEGRATION_DISCOVERY},
+                data={
+                    CONF_ID: packet.sender_hex,
+                    CONF_EEP: f"{packet.rorg_of_eep:02X}-{packet.rorg_func:02X}-{packet.rorg_type:02X}",
+                    CONF_MANUFACTURER: f"{MANUFACTURES[packet.rorg_manufacturer] if 
+                    packet.rorg_manufacturer in MANUFACTURES else 'Unknown'}"
+                },
+            )
+        self.hass.create_task(trigger_discovery_flow())
 
     def send_command(self, packet_type, rorg, rorg_func, rorg_type, command, **kwargs):
         """Send a command via the EnOcean dongle."""

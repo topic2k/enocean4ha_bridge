@@ -1,10 +1,12 @@
 from .binary_sensor import EO4HABinarySensor
 from .common import EO4HAEEPNotSupportedError, EO4HAError
+from .config_flow import EO4HAFlowHandler
 from .gateway import EnOceanGateway
 from .light import EO4HALight
 from .number import EO4HANumber
 from .select import EO4HASelect
 from .sensor import (
+    EO4HAEnergySensor,
     EO4HAHumiditySensor,
     EO4HAIlluminanceSensor,
     EO4HAPowerSensor,

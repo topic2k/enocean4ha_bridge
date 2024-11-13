@@ -87,7 +87,7 @@ class EO4HASelect:
             try:
                 rm = int(report)
             except ValueError:
-                rm = rm
+                rm = report
             try:
                 ep = int(mode)
             except ValueError:
